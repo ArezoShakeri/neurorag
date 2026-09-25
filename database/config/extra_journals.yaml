@@ -1,0 +1,10 @@
+# Journals fetched via Crossref that aren't already fully covered by PubMed/PMC/Europe PMC.
+# Full text is only ingested for articles Unpaywall confirms are open-access (rag/oa_resolver.py);
+# everything else is stored as a metadata/abstract-only record with a link out.
+extra_journals:
+  - name: "Alzheimer's & Dementia"
+    query: "Alzheimer's disease"
+  - name: "Alzheimer's & Dementia: Diagnosis, Assessment & Disease Monitoring"
+    query: "Alzheimer's disease biomarkers"
+  - name: "Alzheimer's Research & Therapy"
+    query: "Alzheimer's disease"

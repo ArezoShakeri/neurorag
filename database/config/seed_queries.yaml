@@ -1,0 +1,12 @@
+# Search terms used to seed the initial ChromaDB corpus from Europe PMC and PubMed.
+# Kept deliberately small for milestone 1 (~150-400 papers total is the target, not a
+# comprehensive corpus). Add more terms later to broaden coverage.
+seed_queries:
+  - "Alzheimer's disease amyloid beta pathology"
+  - "Alzheimer's disease tau pathology"
+  - "Alzheimer's disease APOE4 genetic risk"
+  - "Alzheimer's disease biomarkers diagnosis"
+  - "Alzheimer's disease neuroinflammation"
+  - "mild cognitive impairment progression Alzheimer"
+  - "Alzheimer's disease treatment clinical trial"
+  - "Alzheimer's disease early detection imaging"
