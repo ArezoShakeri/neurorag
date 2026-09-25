@@ -45,6 +45,14 @@ def search(query: str, max_results: int = 200, page_size: int = 100) -> list[Raw
     return records
 
 
+def _journal_title(item: dict) -> str:
+    """resultType=core nests the journal under journalInfo; the flat journalTitle field only
+    exists in the lite format, so check both."""
+    journal = item.get("journalInfo", {}).get("journal", {})
+    title = journal.get("title") or journal.get("isoabbreviation") or item.get("journalTitle") or ""
+    return strip_html_tags(title) or ""
+
+
 def _to_raw_record(item: dict) -> RawRecord:
     pmid = item.get("pmid")
     pmcid = item.get("pmcid")
@@ -73,7 +81,7 @@ def _to_raw_record(item: dict) -> RawRecord:
     return RawRecord(
         title=strip_html_tags(item.get("title", "")) or "",
         authors=[a.strip() for a in item.get("authorString", "").split(",") if a.strip()],
-        journal=strip_html_tags(item.get("journalTitle", "")) or "",
+        journal=_journal_title(item),
         publication_year=year,
         abstract=strip_html_tags(item.get("abstractText")),
         pmid=pmid,

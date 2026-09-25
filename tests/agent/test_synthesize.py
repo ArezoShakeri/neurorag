@@ -36,3 +36,24 @@ def test_no_stray_space_before_punctuation():
     result = _strip_internal_ids(text)
     assert " ." not in result
     assert result == "diverse populations. This approval marks progress."
+
+
+def test_strips_trailing_citation_list_residue():
+    text = "Sleep loss is linked to amyloid buildup. Citations: pmid_1::chunk_0, pmid_2::chunk_3"
+    assert _strip_internal_ids(text) == "Sleep loss is linked to amyloid buildup."
+
+
+def test_strips_truncated_chunk_id_marker():
+    text = "Interpret within a clinical context. [chunk_id:"
+    assert _strip_internal_ids(text) == "Interpret within a clinical context."
+
+
+def test_select_synthesis_chunks_caps_per_paper():
+    from types import SimpleNamespace
+
+    from agent.nodes.synthesize import SYNTHESIS_MAX_CHUNKS_PER_DOC, _select_synthesis_chunks
+
+    chunks = [SimpleNamespace(distance=i / 10, metadata=SimpleNamespace(doc_id="a")) for i in range(4)]
+    chunks.append(SimpleNamespace(distance=0.9, metadata=SimpleNamespace(doc_id="b")))
+    selected = _select_synthesis_chunks(chunks)
+    assert [c.metadata.doc_id for c in selected] == ["a"] * SYNTHESIS_MAX_CHUNKS_PER_DOC + ["b"]

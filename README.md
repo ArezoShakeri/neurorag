@@ -11,7 +11,7 @@ papers — every claim is cited back to a real source, with full publication met
 
 Built for both general-audience users and domain experts/researchers.
 
-![NeuroRAG answering a question about anti-amyloid antibodies, with cited papers](docs/screenshot.png)
+![NeuroRAG answering a question about p-tau217 blood tests, with cited papers](docs/screenshot.png)
 
 ## Highlights
 

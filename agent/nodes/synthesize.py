@@ -17,6 +17,9 @@ from prompts.loader import render_prompt
 _INTERNAL_ID_RE = re.compile(
     r"[\(\[]?\s*(?:pmid_\d+|pmcid_PMC\d+|doi_[0-9a-f]{12}|title_[0-9a-f]{12})(?:::chunk_\d+)?\s*[\)\]]?"
 )
+# Leftovers when the model starts writing a citation list into the prose anyway, e.g. a trailing
+# "Citations:,," after the IDs themselves were stripped, or a truncated "[chunk_id:".
+_CITATION_RESIDUE_RE = re.compile(r"\s*(?:\[\s*chunk_id\s*:?[^\]]*\]?|\b(?:citations|sources|references)\s*:[\s,;]*)$", re.IGNORECASE)
 _WHITESPACE_RE = re.compile(r"[ \t]{2,}")
 _SPACE_BEFORE_PUNCT_RE = re.compile(r"\s+([.,;:!?])")
 
@@ -26,11 +29,14 @@ _SPACE_BEFORE_PUNCT_RE = re.compile(r"\s+([.,;:!?])")
 # without touching accuracy, since grade_relevance already ranked chunks by similarity, so the
 # ones cut are the least relevant.
 SYNTHESIS_CHUNK_LIMIT = 8
+# Tighter than grade.py's per-paper cap: with only 8 slots, one long paper taking 3 of them
+# crowds out other studies and tends to pull the summary toward that paper's side topics.
+SYNTHESIS_MAX_CHUNKS_PER_DOC = 2
 
 
 def synthesize_answer(state: AgentState) -> dict:
     model = get_chat_model().with_structured_output(SynthesisOutput)
-    top_chunks = sorted(state["graded_chunks"], key=lambda c: c.distance)[:SYNTHESIS_CHUNK_LIMIT]
+    top_chunks = _select_synthesis_chunks(state["graded_chunks"])
     chunks_block = _format_chunks(top_chunks)
     prompt = render_prompt("synthesize_answer", question=state["original_question"], chunks_block=chunks_block)
 
@@ -47,8 +53,23 @@ def synthesize_answer(state: AgentState) -> dict:
     }
 
 
+def _select_synthesis_chunks(chunks: list[RetrievedChunk]) -> list[RetrievedChunk]:
+    per_doc: dict[str, int] = {}
+    selected = []
+    for chunk in sorted(chunks, key=lambda c: c.distance):
+        doc_id = chunk.metadata.doc_id
+        if per_doc.get(doc_id, 0) >= SYNTHESIS_MAX_CHUNKS_PER_DOC:
+            continue
+        per_doc[doc_id] = per_doc.get(doc_id, 0) + 1
+        selected.append(chunk)
+        if len(selected) == SYNTHESIS_CHUNK_LIMIT:
+            break
+    return selected
+
+
 def _strip_internal_ids(text: str) -> str:
     cleaned = _INTERNAL_ID_RE.sub("", text)
+    cleaned = _CITATION_RESIDUE_RE.sub("", cleaned.rstrip())
     cleaned = _WHITESPACE_RE.sub(" ", cleaned)
     return _SPACE_BEFORE_PUNCT_RE.sub(r"\1", cleaned).strip()
 
