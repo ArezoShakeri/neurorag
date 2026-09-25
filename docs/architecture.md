@@ -61,7 +61,13 @@ used for batch ingestion, just scoped to one question instead of the seed query 
    graded set. One corrective retry on failure; anything still invalid afterward is stripped,
    never shown. A second, regex-based safety net (`agent/nodes/synthesize.py::_strip_internal_ids`)
    also strips any raw `chunk_id`/`doc_id` the model might leak into the prose itself — belt and
-   suspenders on "don't trust the model, enforce in code."
+   suspenders on "don't trust the model, enforce in code." The same step also runs
+   `agent/claim_checks.py`: every percentage/decimal in the summary must appear in an evidence
+   sentence, and if the summary names a treatment next to it, the evidence sentence must name
+   that same treatment (catches e.g. donanemab's 85.1% plaque reduction credited to lecanemab).
+   Chunks a figure came from are auto-added to the citations; failures share the one corrective
+   retry, after which offending sentences are removed. Unparseable model output (small models
+   occasionally degenerate) gets one retry, then falls back to showing the papers alone.
 9. `format_response` (or `respond_no_evidence` + `suggest_followups` if nothing relevant was
    found — the no-evidence path is the only one still using a separate follow-up-suggestion call,
    since there's no summary yet to bundle it with) — assembles the final answer: summary,

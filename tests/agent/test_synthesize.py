@@ -57,3 +57,18 @@ def test_select_synthesis_chunks_caps_per_paper():
     chunks.append(SimpleNamespace(distance=0.9, metadata=SimpleNamespace(doc_id="b")))
     selected = _select_synthesis_chunks(chunks)
     assert [c.metadata.doc_id for c in selected] == ["a"] * SYNTHESIS_MAX_CHUNKS_PER_DOC + ["b"]
+
+
+def test_unparseable_model_output_falls_back_instead_of_crashing(mocker):
+    from langchain_core.exceptions import OutputParserException
+
+    from agent.nodes import synthesize
+
+    model = mocker.Mock()
+    model.invoke.side_effect = OutputParserException("truncated JSON")
+    mocker.patch.object(synthesize, "get_chat_model").return_value.with_structured_output.return_value = model
+
+    result = synthesize.synthesize_answer({"original_question": "q", "graded_chunks": []})
+    assert model.invoke.call_count == 2
+    assert result["citation_ids"] == []
+    assert "papers I found" in result["draft_summary"]

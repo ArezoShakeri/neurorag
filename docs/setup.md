@@ -26,11 +26,14 @@ rate limits from 3 to 10 req/sec (free, from your NCBI account settings).
 ## 3. Pull the local LLM
 
 ```bash
-ollama pull qwen2.5:7b-instruct
+ollama pull qwen3:8b
 ```
 
-Needs ~5-6 GB RAM/VRAM. `qwen2.5:14b-instruct` is a stretch upgrade if you have ≥32 GB unified
-memory/VRAM — just change `OLLAMA_MODEL` in `.env`, no code change needed.
+Needs ~6 GB RAM/VRAM, runs comfortably on a 16 GB laptop. Chosen over `qwen2.5:7b-instruct`
+and `gemma3:12b` in a side-by-side test on the same questions: faster than both (~20s per answer
+on an M2 Pro vs ~33s and ~70s), and its first drafts had no figure-attribution errors caught by
+`agent/claim_checks.py`. Thinking mode is disabled in `agent/llm_factory.py`. Any Ollama model
+works — change `OLLAMA_MODEL` in `.env`, no code change needed.
 
 ## 4. Populate the vector store
 

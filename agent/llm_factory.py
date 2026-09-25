@@ -20,6 +20,9 @@ def get_chat_model() -> BaseChatModel:
             base_url=settings.ollama_base_url,
             temperature=0.1,
             num_predict=settings.llm_max_output_tokens,
+            # Thinking-capable models (e.g. qwen3) would otherwise spend the output budget on
+            # hidden reasoning; the task is grounded extraction, which doesn't need it.
+            reasoning=False,
         )
 
     if settings.llm_provider == "anthropic":

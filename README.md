@@ -19,13 +19,16 @@ Built for both general-audience users and domain experts/researchers.
   retrieval, relevance grading, synthesis, and citation validation as explicit graph nodes.
 - **Hallucination-resistant citations** — every cited source is checked *in code* against the
   retrieved set; invalid citations trigger a corrective retry and are stripped if still wrong.
+- **Verified figures** — every percentage/decimal in an answer must appear in the evidence and be
+  tied to the same drug the source ties it to (catches e.g. one trial's result credited to another
+  drug); the source is auto-cited, and unverifiable sentences are removed after one retry.
 - **Biomedical literature pipeline** — PubMed, PubMed Central, Europe PMC, Crossref and
   Unpaywall clients with deduplication, open-access resolution and section-aware chunking.
 - **Always up to date** — the first message of each conversation triggers a background refresh
   that ingests papers published up to today.
 - **Domain embeddings** — `S-PubMedBert-MS-MARCO` embeddings in ChromaDB, with source and
   publication-year filters.
-- **Runs fully local and free** — Ollama (`qwen2.5:7b-instruct`) by default; switch to Claude via
+- **Runs fully local and free** — Ollama (`qwen3:8b`) by default; switch to Claude via
   one environment variable. Local Whisper voice input and browser read-aloud.
 - **Production structure** — FastAPI backend, Streamlit frontend, Docker Compose, typed Pydantic
   schemas shared across ingestion and API, unit tests and CI.
@@ -45,7 +48,7 @@ pip install -e ".[dev]"
 cp .env.example .env   # fill in UNPAYWALL_EMAIL / CONTACT_EMAIL with a real address
 
 # Local LLM (one-time)
-ollama pull qwen2.5:7b-instruct
+ollama pull qwen3:8b
 
 # Populate the vector store (one-time, ~10-20 min)
 python -m rag.run_ingestion

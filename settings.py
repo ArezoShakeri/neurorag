@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     # LLM provider
     llm_provider: str = "ollama"  # "ollama" | "anthropic"
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "qwen2.5:7b-instruct"
+    ollama_model: str = "qwen3:8b"
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-haiku-4-5"
     llm_max_output_tokens: int = 700  # bounds worst-case decode time; typical answers are well under this

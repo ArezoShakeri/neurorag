@@ -3,6 +3,9 @@ deterministically rather than regex-scraped from prose."""
 
 import re
 
+from langchain_core.exceptions import OutputParserException
+from pydantic import ValidationError
+
 from database.chroma_client import RetrievedChunk
 from agent.llm_factory import get_chat_model
 from agent.schemas import SynthesisOutput
@@ -33,6 +36,17 @@ SYNTHESIS_CHUNK_LIMIT = 8
 # crowds out other studies and tends to pull the summary toward that paper's side topics.
 SYNTHESIS_MAX_CHUNKS_PER_DOC = 2
 
+# Small local models occasionally degenerate (e.g. repeating a citation list inside the prose
+# until the output budget runs out), leaving truncated JSON that fails schema validation.
+_PARSE_RETRY_NOTE = (
+    "IMPORTANT: your previous output was not valid structured output. Keep evidence_summary to "
+    "plain prose (no IDs or citation lists) and put chunk_ids only in the citations field."
+)
+_UNPARSEABLE_SUMMARY = (
+    "I wasn't able to generate a reliable summary for this question. The most relevant papers I "
+    "found are listed below."
+)
+
 
 def synthesize_answer(state: AgentState) -> dict:
     model = get_chat_model().with_structured_output(SynthesisOutput)
@@ -44,13 +58,30 @@ def synthesize_answer(state: AgentState) -> dict:
     if feedback:
         prompt = f"{prompt}\n\n{feedback}"
 
-    result: SynthesisOutput = model.invoke(prompt)
+    result = _invoke_structured(model, prompt)
+    if result is None:
+        # The model never produced parseable output; answer with the papers alone rather than fail.
+        return {
+            "draft_summary": _UNPARSEABLE_SUMMARY,
+            "draft_interpretation": None,
+            "citation_ids": [],
+            "suggested_questions": [],
+        }
     return {
         "draft_summary": _strip_internal_ids(result.evidence_summary),
         "draft_interpretation": result.interpretation,
         "citation_ids": result.citations,
         "suggested_questions": result.suggested_questions,
     }
+
+
+def _invoke_structured(model, prompt: str) -> SynthesisOutput | None:
+    for attempt_prompt in (prompt, f"{prompt}\n\n{_PARSE_RETRY_NOTE}"):
+        try:
+            return model.invoke(attempt_prompt)
+        except (OutputParserException, ValidationError):
+            continue
+    return None
 
 
 def _select_synthesis_chunks(chunks: list[RetrievedChunk]) -> list[RetrievedChunk]:
